@@ -1,0 +1,12 @@
+name: codefather_demo
+description: Local match replay for Codefather.
+publish_to: none
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  codefather_core:
+    path: ../core
+flutter:
+  uses-material-design: true

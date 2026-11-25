@@ -1,0 +1,6 @@
+name: codefather_core
+description: Headless Mafia match engine and public-evidence judges.
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+dev_dependencies:
+  test: ^1.30.0
