@@ -9,6 +9,7 @@ Match playLevel(
   int seed,
   PlayableLevel level, {
   double hardMafiaClearShare = .5,
+  Policy? comparisonBaseline,
   void Function(bool)? onAdvice,
   void Function(bool, bool)? onPairedAdvice,
 }) {
@@ -22,13 +23,14 @@ Match playLevel(
   return runPolicyMatch(
     seed,
     policy,
+    comparisonBaseline: comparisonBaseline,
     baselineRandomShare: level == PlayableLevel.dumb ? .5 : 0,
     easyRules: level == PlayableLevel.easy ? const EasyRules(0, 2, 8) : null,
     compareClaimPatterns: medium,
     independentBotVotes: medium || hard,
     informedVoteShare: hard ? .29 : .15,
     mediumHintVoteBonus: 0,
-    enableAnnouncement: hard,
+    enableAnnouncement: hard && comparisonBaseline == null,
     useActualVoteTarget: hard,
     usePublicOrdinaryVotes: hard,
     preferAnnouncedTarget: hard,

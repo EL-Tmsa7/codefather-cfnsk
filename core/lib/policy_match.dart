@@ -15,6 +15,7 @@ Match runPolicyMatch(
   bool perfectHint = false,
   bool useHintVotes = true,
   bool easyFirstHint = false,
+  Policy? comparisonBaseline,
   bool compareClaimPatterns = false,
   double baselineRandomShare = 0,
   bool enableAnnouncement = false,
@@ -47,6 +48,12 @@ Match runPolicyMatch(
   onJudgeComparison,
   void Function(List<List<int>>, Set<int>)? auditTeams,
 }) {
+  if (comparisonBaseline != null &&
+      comparisonBaseline != Policy.random &&
+      comparisonBaseline != Policy.followsClaim &&
+      comparisonBaseline != Policy.coordinated) {
+    throw ArgumentError.value(comparisonBaseline, 'comparisonBaseline');
+  }
   if (!(baselineRandomShare >= 0 && baselineRandomShare <= 1)) {
     throw ArgumentError.value(baselineRandomShare, 'baselineRandomShare');
   }
@@ -71,6 +78,7 @@ Match runPolicyMatch(
   final speech = Random(seed ^ 8191);
   final fakeClears = Random(seed ^ 164921);
   final advice = Random(seed ^ 65521);
+  final judgePolicy = comparisonBaseline ?? policy;
   final baselineChoice = baselineRandomShare > 0 ? Random(seed ^ 251641) : null;
   final voteTies = Random(seed ^ 104729);
   final voteChoices = Random(seed ^ 130363);
@@ -192,8 +200,8 @@ Match runPolicyMatch(
       final shuffled = [...living];
       if (hintDay) shuffled.shuffle(advice);
       int? shared;
-      if (policy == Policy.coordinated) shared = shuffled.first;
-      if (policy == Policy.followsClaim) {
+      if (judgePolicy == Policy.coordinated) shared = shuffled.first;
+      if (judgePolicy == Policy.followsClaim) {
         // First surviving claimant with a live named suspect.
         for (final entry in accusations.entries) {
           if (living.contains(entry.key) && living.contains(entry.value)) {
@@ -204,7 +212,7 @@ Match runPolicyMatch(
       }
       if (perfectHint) {
         shared = shuffled.firstWhere((id) => game.roles[id] == Role.mafia);
-      } else if (medium != null) {
+      } else if (medium != null && comparisonBaseline == null) {
         final events = game.publicEvents.toList();
         final feasible = medium.feasible(events);
         int mediumTarget() => compareClaimPatterns && firstHint
@@ -353,9 +361,9 @@ Match runPolicyMatch(
           feasible,
           game.roles.keys.where((p) => game.roles[p] == Role.mafia).toSet(),
         );
-      } else if (easyRules != null) {
+      } else if (easyRules != null && comparisonBaseline == null) {
         shared = easyRules.recommend(game.publicEvents, shuffled);
-      } else if (policy == Policy.simpleBaseline) {
+      } else if (judgePolicy == Policy.simpleBaseline) {
         if (baselineChoice != null &&
             baselineChoice.nextDouble() < baselineRandomShare) {
           shared = shuffled.first;
@@ -376,6 +384,7 @@ Match runPolicyMatch(
         firstHint = false;
         game.log('ASK_CODEFATHER', target: shared);
       }
+      if (hintDay && comparisonBaseline != null) firstHint = false;
       // The benchmark assumes villagers follow the public list while any
       // named target survives. The first eligible ID is the common tie-break.
       final namedTarget = named?.where(living.contains).firstOrNull;
